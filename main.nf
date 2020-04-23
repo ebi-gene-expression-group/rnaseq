@@ -1482,7 +1482,7 @@ if (!params.skipAlignment) {
   /*
    * STEP 13 - edgeR MDS and heatmap
    */
-  process sample_correlation {
+  process sc {
       label 'low_memory'
       tag "${input_files[0].toString() - '.sorted_gene.featureCounts.txt' - 'Aligned'}"
       publishDir "${params.outdir}/sample_correlation", mode: 'copy'
