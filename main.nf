@@ -89,12 +89,12 @@ workflow NFCORE_RNASEQ {
     )
     ch_versions = ch_versions.mix(PREPARE_GENOME.out.versions)
 
-    // Check if contigs in genome fasta file > 512 Mbp
+    // Auto-detect if CSI index is needed based on contig size 
     if (!params.skip_alignment && !params.bam_csi_index) {
         PREPARE_GENOME
             .out
             .fai
-            .map { checkMaxContigSize(it) }
+            .map { fai -> checkMaxContigSize(fai) } .collect()
     }
 
     //
