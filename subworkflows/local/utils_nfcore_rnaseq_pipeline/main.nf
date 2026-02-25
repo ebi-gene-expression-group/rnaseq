@@ -552,26 +552,56 @@ def brackenPrecisionWithoutKrakenDBWarn() {
         "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 }
 
-//
-// Function to generate an error if contigs in genome fasta file > 512 Mbp
-//
+// 
+// Function to check if contigs in genome fasta file > 512 Mbp 
+// Returns true if large contig found (auto-enables CSI), false otherwise 
+// 
+
 def checkMaxContigSize(fai_file) {
     def max_size = 512000000
+    def largeContigFound = false
+    def largeContigs = []
+
     fai_file.eachLine { line ->
-        def lspl  = line.split('\t')
-        def chrom = lspl[0]
-        def size  = lspl[1]
-        if (size.toInteger() > max_size) {
-            def error_string = "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n" +
-                "  Contig longer than ${max_size}bp found in reference genome!\n\n" +
-                "  ${chrom}: ${size}\n\n" +
-                "  Provide the '--bam_csi_index' parameter to use a CSI instead of BAI index.\n\n" +
-                "  Please see:\n" +
-                "  https://github.com/nf-core/rnaseq/issues/744\n" +
-                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-            error(error_string)
+
+        def fields = line.split('\t')
+
+        if (fields.size() < 2) {
+            return
+        }
+
+        def chrom = fields[0]
+        def size  = fields[1] as Long
+
+        if (size > max_size) {
+            largeContigs << "${chrom}: ${size} bp"
+            largeContigFound = true
         }
     }
+
+    if (largeContigFound) {
+
+        log.warn """
+        ======================================================================
+        Large contig(s) detected (>512 Mbp) in reference genome:
+
+        ${largeContigs.join('\n        ')}
+
+        Automatically enabling CSI index format (--bam_csi_index).
+
+        CSI format supports chromosomes up to ~2.1 Gbp and is compatible
+        with all modern tools.
+
+        This is required for genomes with large chromosomes
+        (e.g., wheat, barley, some plant genomes).
+        ======================================================================
+        """.stripIndent()
+
+        // Auto-enable CSI index
+        params.bam_csi_index = true
+    }
+
+    return largeContigFound
 }
 
 //
