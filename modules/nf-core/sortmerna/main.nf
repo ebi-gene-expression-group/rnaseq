@@ -34,6 +34,7 @@ process SORTMERNA {
     def mv_cmd        = ''
     def reads_input   = ''
     def refs_input    = (skip_index && index) ? "--idx-dir ${index}" : ''
+    def fastas_input  = (skip_index && index) ? '' : '--ref ' + fastas.join(' --ref ')
 
     if (! index_only){
         reads_args = '--aligned rRNA_reads --fastx --other non_rRNA_reads'
@@ -56,7 +57,7 @@ process SORTMERNA {
     }
     """
     sortmerna \\
-        ${'--ref '+fastas.join(' --ref ')} \\
+        $fastas_input \\
         $refs_input \\
         $reads_input \\
         --threads $task.cpus \\
